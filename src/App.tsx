@@ -3,8 +3,27 @@ import './App.css';
 import RawDataProcessor from './components/RawDataProcessor';
 import AnnotatedDataProcessor from './components/AnnotatedDataProcessor';
 
+type ProcessedTableData = {
+  sourceFileName: string;
+  columns: string[];
+  rows: string[][];
+};
+
 function App() {
-  const [activeTab, setActiveTab] = useState<'raw' | 'annotated'>('raw');
+  const [currentStep, setCurrentStep] = useState<1 | 2>(1);
+  const [processedTableData, setProcessedTableData] = useState<ProcessedTableData | null>(null);
+
+  const handleDataProcessed = (data: ProcessedTableData | null) => {
+    setProcessedTableData(data);
+    if (data) {
+      // 数据处理完成后，自动进入第二步
+      setCurrentStep(2);
+    }
+  };
+
+  const handleBackToStep1 = () => {
+    setCurrentStep(1);
+  };
 
   return (
     <div className="app-container">
@@ -13,23 +32,30 @@ function App() {
         <p className="subtitle">仅限合约广告处理结案评论数据使用，如有疑问请企业微信联系chelseayao</p>
       </header>
 
-      <div className="tab-container">
-        <button
-          className={`tab-button ${activeTab === 'raw' ? 'active' : ''}`}
-          onClick={() => setActiveTab('raw')}
-        >
-          📄 原始数据处理
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'annotated' ? 'active' : ''}`}
-          onClick={() => setActiveTab('annotated')}
-        >
-          📊 标注后数据处理
-        </button>
+      <div className="steps-indicator">
+        <div className={`step-item ${currentStep === 1 ? 'active' : 'completed'}`}>
+          <div className="step-number">{currentStep > 1 ? '✓' : '1'}</div>
+          <div className="step-label">原始数据处理</div>
+        </div>
+        <div className="step-divider"></div>
+        <div className={`step-item ${currentStep === 2 ? 'active' : ''}`}>
+          <div className="step-number">2</div>
+          <div className="step-label">标注后数据处理</div>
+        </div>
       </div>
 
       <div className="content-container">
-        {activeTab === 'raw' ? <RawDataProcessor /> : <AnnotatedDataProcessor />}
+        {currentStep === 1 ? (
+          <RawDataProcessor
+            onDataChange={setProcessedTableData}
+            onGoToNext={handleDataProcessed}
+          />
+        ) : (
+          <AnnotatedDataProcessor
+            inputTableData={processedTableData}
+            onGoToStep1={handleBackToStep1}
+          />
+        )}
       </div>
 
       <footer className="app-footer">
