@@ -496,43 +496,6 @@ const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
             </button>
           </div>
 
-          <div className="table-actions">
-            <div className="table-actions-left">
-              <span className="table-badge">当前页：{page}/{totalPages}</span>
-              <label className="table-label">
-                每页显示
-                <select
-                  className="table-select"
-                  value={pageSize}
-                  onChange={(e) => setPageSize(Number(e.target.value))}
-                >
-                  <option value={50}>50</option>
-                  <option value={200}>200</option>
-                  <option value={500}>500</option>
-                  <option value={1000}>1000</option>
-                </select>
-                行
-              </label>
-            </div>
-
-            <div className="table-actions-right">
-              <button
-                className="secondary-button"
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page <= 1}
-              >
-                上一页
-              </button>
-              <button
-                className="secondary-button"
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-              >
-                下一页
-              </button>
-            </div>
-          </div>
-
           {tfHint && (
             <div className="hint-message">
               <strong>提示：</strong>{tfHint}
@@ -599,6 +562,43 @@ const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
                 })}
               </tbody>
             </table>
+          </div>
+
+          <div className="table-actions">
+            <div className="table-actions-left">
+              <span className="table-badge">当前页：{page}/{totalPages}</span>
+              <label className="table-label">
+                每页显示
+                <select
+                  className="table-select"
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                >
+                  <option value={50}>50</option>
+                  <option value={200}>200</option>
+                  <option value={500}>500</option>
+                  <option value={1000}>1000</option>
+                </select>
+                行
+              </label>
+            </div>
+
+            <div className="table-actions-right">
+              <button
+                className="secondary-button"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page <= 1}
+              >
+                上一页
+              </button>
+              <button
+                className="secondary-button"
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+              >
+                下一页
+              </button>
+            </div>
           </div>
 
           <div className="action-buttons">
