@@ -102,9 +102,20 @@ const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1, preferredMethod =
   const [dragOver, setDragOver] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<'online' | 'offline'>(preferredMethod);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadFileName, setDownloadFileName] = useState<string | null>(null);
+
+  // Toast提示函数
+  const showToastMessage = (message: string) => {
+    setToastMessage(message);
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 2000);
+  };
 
   // 当preferredMethod变化时更新selectedMethod
   useEffect(() => {
@@ -250,6 +261,9 @@ const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1, preferredMethod =
 
     setResult({ fileName: outputFileName, rowCount: renamedData.length, groupCount });
     setDownload(URL.createObjectURL(blob), outputFileName);
+    
+    // 显示toast提示
+    showToastMessage('✅ 处理完成！');
   };
 
   const processFromInputTable = async (t: InputTableData) => {
@@ -276,6 +290,9 @@ const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1, preferredMethod =
 
     setResult({ fileName: outputFileName, rowCount: renamedData.length, groupCount });
     setDownload(URL.createObjectURL(blob), outputFileName);
+    
+    // 显示toast提示
+    showToastMessage('✅ 处理完成！');
   };
 
   const processFile = async () => {
@@ -517,6 +534,13 @@ const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1, preferredMethod =
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Toast提示 */}
+      {showToast && (
+        <div className="toast-notification">
+          {toastMessage}
         </div>
       )}
     </div>

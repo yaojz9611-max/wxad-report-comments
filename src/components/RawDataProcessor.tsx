@@ -30,6 +30,7 @@ const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
   const [page, setPage] = useState(1);
   const [tfHint, setTfHint] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [errorRows, setErrorRows] = useState<Set<number>>(new Set()); // 存储错误行的索引（从0开始）
 
   const tfColumnIndex = useMemo(() => {
     if (!tableData) return -1;
@@ -249,6 +250,15 @@ const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
     setTfHint(null);
     setValidationError(null); // 用户修改时清除校验错误
 
+    // 如果值变为有效（0或1），从错误行集合中移除
+    if (v === '0' || v === '1') {
+      setErrorRows(prev => {
+        const next = new Set(prev);
+        next.delete(globalRowIndex);
+        return next;
+      });
+    }
+
     setTableData(prev => {
       if (!prev) return prev;
       if (tfColumnIndex < 0) return prev;
@@ -267,6 +277,23 @@ const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
 
   const deleteRow = (globalRowIndex: number) => {
     setValidationError(null); // 删除行时清除校验错误
+    
+    // 从错误行集合中移除
+    setErrorRows(prev => {
+      const next = new Set(prev);
+      next.delete(globalRowIndex);
+      // 重新映射所有大于被删除行索引的错误行
+      const remapped = new Set<number>();
+      next.forEach(idx => {
+        if (idx > globalRowIndex) {
+          remapped.add(idx - 1);
+        } else {
+          remapped.add(idx);
+        }
+      });
+      return remapped;
+    });
+    
     setTableData(prev => {
       if (!prev) return prev;
       if (globalRowIndex < 0 || globalRowIndex >= prev.rows.length) return prev;
@@ -278,10 +305,11 @@ const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
 
   const validateTfColumn = () => {
     if (!tableData || tfColumnIndex < 0) {
-      return { valid: false, message: '数据异常：未找到 tf 列' };
+      return { valid: false, message: '数据异常：未找到 tf 列', errorRowIndices: [] };
     }
 
     const emptyRows: number[] = [];
+    const errorRowIndices: number[] = []; // 错误行的索引（从0开始）
     
     for (let i = 0; i < tableData.rows.length; i++) {
       const row = tableData.rows[i];
@@ -289,7 +317,8 @@ const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
       
       // tf 必须是 0 或 1
       if (tfValue !== '0' && tfValue !== '1') {
-        emptyRows.push(i + 1); // 行号从 1 开始
+        emptyRows.push(i + 1); // 行号从 1 开始（用于显示）
+        errorRowIndices.push(i); // 索引从 0 开始（用于高亮）
       }
     }
 
@@ -300,10 +329,10 @@ const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
       if (moreCount > 0) {
         message += `\n\n...还有 ${moreCount} 行未填写`;
       }
-      return { valid: false, message };
+      return { valid: false, message, errorRowIndices };
     }
 
-    return { valid: true, message: '' };
+    return { valid: true, message: '', errorRowIndices: [] };
   };
 
   const handleGoToNext = () => {
@@ -311,6 +340,8 @@ const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
     
     if (!validation.valid) {
       setValidationError(validation.message);
+      // 标记错误行
+      setErrorRows(new Set(validation.errorRowIndices));
       // 滚动到错误提示位置
       setTimeout(() => {
         const errorEl = document.querySelector('.validation-error-message');
@@ -322,6 +353,7 @@ const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
     }
 
     setValidationError(null);
+    setErrorRows(new Set());
     if (tableData && onGoToNext) {
       onGoToNext(tableData, 'online');
     }
@@ -507,6 +539,7 @@ const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
             <table className="data-table">
               <thead>
                 <tr>
+                  <th className="row-number-col">行号</th>
                   {tableData.columns.map((col) => (
                     <th key={col}>{col}</th>
                   ))}
@@ -516,8 +549,10 @@ const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
               <tbody>
                 {visibleRows.map((row, rowIndex) => {
                   const globalIndex = (page - 1) * pageSize + rowIndex;
+                  const isErrorRow = errorRows.has(globalIndex);
                   return (
-                    <tr key={globalIndex}>
+                    <tr key={globalIndex} className={isErrorRow ? 'error-row' : ''}>
+                      <td className="row-number-cell">{globalIndex + 1}</td>
                       {tableData.columns.map((col, colIndex) => {
                         const cellValue = row[colIndex] ?? '';
 
@@ -525,7 +560,7 @@ const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
                           return (
                             <td key={`${globalIndex}-${col}`}>
                               <input
-                                className="tf-input"
+                                className={`tf-input ${isErrorRow ? 'tf-input-error' : ''}`}
                                 value={cellValue}
                                 inputMode="numeric"
                                 placeholder="0/1"

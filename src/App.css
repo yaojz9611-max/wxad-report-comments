@@ -448,6 +448,44 @@ body {
   background: #fafafa;
 }
 
+/* 错误行高亮 */
+.data-table tbody tr.error-row td {
+  background: #fef2f2 !important;
+  border-top: 2px solid #fca5a5;
+  border-bottom: 2px solid #fca5a5;
+}
+
+.data-table tbody tr.error-row td:first-child {
+  border-left: 2px solid #fca5a5;
+}
+
+.data-table tbody tr.error-row td:last-child {
+  border-right: 2px solid #fca5a5;
+}
+
+/* 行号列样式 */
+.row-number-col {
+  width: 80px;
+  text-align: center !important;
+  background: #fafafa;
+  font-weight: 600;
+  color: #999;
+}
+
+.row-number-cell {
+  text-align: center;
+  font-weight: 500;
+  color: #999;
+  background: #fafafa;
+  font-size: 0.8125rem;
+}
+
+.data-table tbody tr.error-row .row-number-cell {
+  background: #fee2e2 !important;
+  color: #dc2626;
+  font-weight: 600;
+}
+
 .table-sticky-col {
   position: sticky;
   left: 0;
@@ -474,6 +512,17 @@ body {
   outline: none;
   background: #e8f5e9;
   box-shadow: 0 0 0 2px rgba(7, 193, 96, 0.2);
+}
+
+/* tf输入框错误状态 */
+.tf-input-error {
+  background: #fee2e2 !important;
+  border: 1px solid #dc2626;
+}
+
+.tf-input-error:focus {
+  background: #fef2f2 !important;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2) !important;
 }
 
 .row-delete-button {
@@ -1665,4 +1714,42 @@ body {
 .inline-link-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Toast通知样式 */
+.toast-notification {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(7, 193, 96, 0.95);
+  color: white;
+  padding: 16px 32px;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 2000;
+  animation: toast-slide-in 0.3s ease, toast-fade-out 0.3s ease 1.7s;
+  backdrop-filter: blur(8px);
+}
+
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes toast-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
