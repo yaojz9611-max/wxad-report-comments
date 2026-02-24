@@ -10,6 +10,8 @@ type InputTableData = {
 type Props = {
   inputTableData?: InputTableData | null;
   onGoToStep1?: () => void;
+  preferredMethod?: 'online' | 'offline';
+  onResetAll?: () => void;
 };
 
 interface ProcessResult {
@@ -92,15 +94,22 @@ const normalizeTf = (v: unknown) => {
   throw new Error(`tf 列仅支持 0 或 1，发现非法值：${s}`);
 };
 
-const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1 }: Props) => {
+const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1, preferredMethod = 'online', onResetAll }: Props) => {
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState<ProcessResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<'online' | 'offline'>(preferredMethod);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadFileName, setDownloadFileName] = useState<string | null>(null);
+
+  // 当preferredMethod变化时更新selectedMethod
+  useEffect(() => {
+    setSelectedMethod(preferredMethod);
+  }, [preferredMethod]);
 
   useEffect(() => {
     return () => {
@@ -317,6 +326,17 @@ const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1 }: Props) => {
     setDownloadFileName(null);
   };
 
+  const handleResetConfirm = () => {
+    setShowResetConfirm(false);
+    if (onResetAll) {
+      onResetAll();
+    }
+  };
+
+  const handleResetCancel = () => {
+    setShowResetConfirm(false);
+  };
+
   return (
     <div className="processor-container">
       <div className="step-header">
@@ -327,9 +347,9 @@ const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1 }: Props) => {
       </div>
 
       <div className="step2-processing-options">
-        {inputSummary && (
+        {inputSummary && selectedMethod === 'online' && (
           <div className="step2-option-card primary-option">
-            <div className="option-badge">方式一</div>
+            <div className="option-badge">使用第一步的数据</div>
             <div className="data-ready-card">
               <div className="data-ready-icon">✓</div>
               <div className="data-ready-content">
@@ -350,76 +370,78 @@ const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1 }: Props) => {
           </div>
         )}
 
-        <div className={`step2-option-card ${!inputSummary ? 'primary-option' : ''}`}>
-          <div className="option-badge">{inputSummary ? '方式二' : '上传文件'}</div>
-          <div className="upload-option-header">
-            <div className="upload-option-title">
-              <span className="upload-option-icon">📊</span>
-              上传手动标注的 Excel 文件
+        {selectedMethod === 'offline' && (
+          <div className={`step2-option-card ${!inputSummary ? 'primary-option' : ''}`}>
+            <div className="option-badge">上传 Excel 文件</div>
+            <div className="upload-option-header">
+              <div className="upload-option-title">
+                <span className="upload-option-icon">📊</span>
+                上传手动标注的 Excel 文件
+              </div>
+              <p className="upload-option-description">
+                如果你已在离线完成标注，直接上传 Excel 文件即可生成 CSV
+              </p>
             </div>
-            <p className="upload-option-description">
-              如果你已在离线完成标注，直接上传 Excel 文件即可生成 CSV
-            </p>
-          </div>
           
-          <div
-            className={`upload-section-compact ${dragOver ? 'drag-over' : ''} ${file ? 'has-file' : ''}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            style={{ marginTop: '12px' }}
-          >
-            {!file ? (
-              <div className="upload-compact-content">
-                <div className="upload-icon-small">📊</div>
-                <div className="upload-compact-text">
-                  <label htmlFor="annotated-file-input" className="file-input-label-compact">
-                    选择 Excel 文件
-                  </label>
-                  <span className="upload-hint">或拖拽文件到此处</span>
+            <div
+              className={`upload-section-compact ${dragOver ? 'drag-over' : ''} ${file ? 'has-file' : ''}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              style={{ marginTop: '12px' }}
+            >
+              {!file ? (
+                <div className="upload-compact-content">
+                  <div className="upload-icon-small">📊</div>
+                  <div className="upload-compact-text">
+                    <label htmlFor="annotated-file-input" className="file-input-label-compact">
+                      选择 Excel 文件
+                    </label>
+                    <span className="upload-hint">或拖拽文件到此处</span>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="upload-file-ready">
-                <div className="file-ready-icon">✓</div>
-                <div className="file-ready-info">
-                  <div className="file-ready-name">{file.name}</div>
-                  <div className="file-ready-size">{(file.size / 1024).toFixed(2)} KB</div>
+              ) : (
+                <div className="upload-file-ready">
+                  <div className="file-ready-icon">✓</div>
+                  <div className="file-ready-info">
+                    <div className="file-ready-name">{file.name}</div>
+                    <div className="file-ready-size">{(file.size / 1024).toFixed(2)} KB</div>
+                  </div>
+                  <div className="file-ready-actions">
+                    <label htmlFor="annotated-file-input-change" className="file-change-button">
+                      修改文件
+                    </label>
+                    <button onClick={reset} className="file-delete-button">
+                      删除文件
+                    </button>
+                  </div>
                 </div>
-                <div className="file-ready-actions">
-                  <label htmlFor="annotated-file-input-change" className="file-change-button">
-                    修改文件
-                  </label>
-                  <button onClick={reset} className="file-delete-button">
-                    删除文件
-                  </button>
-                </div>
-              </div>
+              )}
+              <input
+                id="annotated-file-input"
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileChange}
+                className="file-input"
+              />
+              <input
+                id="annotated-file-input-change"
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileChange}
+                className="file-input"
+              />
+            </div>
+
+            {file && !processing && !result && (
+              <button onClick={processFile} className="primary-action-button" style={{ width: '100%', marginTop: '16px' }}>
+                处理并生成 CSV
+              </button>
             )}
-            <input
-              id="annotated-file-input"
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileChange}
-              className="file-input"
-            />
-            <input
-              id="annotated-file-input-change"
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileChange}
-              className="file-input"
-            />
           </div>
+        )}
 
-          {file && !processing && !result && (
-            <button onClick={processFile} className="primary-action-button" style={{ width: '100%', marginTop: '16px' }}>
-              处理并生成 CSV
-            </button>
-          )}
-        </div>
-
-        {!inputSummary && !file && (
+        {selectedMethod === 'online' && !inputSummary && !file && (
           <div className="step2-hint-card">
             <div className="hint-icon">💡</div>
             <div className="hint-text">
@@ -428,6 +450,19 @@ const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1 }: Props) => {
           </div>
         )}
       </div>
+
+      {/* 底部返回按钮 */}
+      {!processing && !result && (
+        <div className="step2-back-action">
+          <button
+            className="back-to-step1-button"
+            onClick={onGoToStep1}
+            disabled={!onGoToStep1}
+          >
+            ← 返回上一步
+          </button>
+        </div>
+      )}
 
       {processing && (
         <div className="processing">
@@ -457,9 +492,31 @@ const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1 }: Props) => {
           <button onClick={downloadFile} className="download-button" disabled={!downloadUrl}>
             下载 CSV 文件
           </button>
-          <button onClick={reset} className="reset-button" style={{ width: '100%', marginTop: '10px' }}>
-            处理新文件
-          </button>
+          <div className="reset-new-data-action">
+            <button onClick={() => setShowResetConfirm(true)} className="reset-new-data-button">
+              处理新的评论数据 →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 二次确认弹窗 */}
+      {showResetConfirm && (
+        <div className="modal-overlay" onClick={handleResetCancel}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal-title">确认操作</h3>
+            <p className="modal-text">
+              确认要处理新的数据吗？此操作将清空历史操作记录，请确认需要的文件均已下载并保存。
+            </p>
+            <div className="modal-buttons">
+              <button onClick={handleResetConfirm} className="modal-confirm-button">
+                确认
+              </button>
+              <button onClick={handleResetCancel} className="modal-cancel-button">
+                取消
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

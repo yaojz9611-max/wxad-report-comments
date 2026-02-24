@@ -840,6 +840,168 @@ body {
   margin-top: 20px;
 }
 
+.alternative-action {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.skip-to-offline-button {
+  background: transparent;
+  border: none;
+  color: #1677ff;
+  font-size: 0.875rem;
+  font-weight: 400;
+  cursor: pointer;
+  padding: 8px 0;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.skip-to-offline-button:hover:not(:disabled) {
+  color: #4096ff;
+}
+
+.skip-to-offline-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 第二步底部返回按钮 */
+.step2-back-action {
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e5e5;
+}
+
+.back-to-step1-button {
+  background: transparent;
+  border: none;
+  color: #1677ff;
+  font-size: 0.875rem;
+  font-weight: 400;
+  cursor: pointer;
+  padding: 8px 0;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.back-to-step1-button:hover:not(:disabled) {
+  color: #4096ff;
+}
+
+.back-to-step1-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 处理新数据按钮 */
+.reset-new-data-action {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.reset-new-data-button {
+  background: transparent;
+  border: none;
+  color: #1677ff;
+  font-size: 0.875rem;
+  font-weight: 400;
+  cursor: pointer;
+  padding: 8px 0;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.reset-new-data-button:hover {
+  color: #4096ff;
+}
+
+/* 确认弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.modal-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.modal-text {
+  font-size: 0.875rem;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.modal-confirm-button {
+  flex: 1;
+  padding: 12px 24px;
+  background: #07C160;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-confirm-button:hover {
+  background: #06AE56;
+}
+
+.modal-cancel-button {
+  flex: 1;
+  padding: 12px 24px;
+  background: #f5f5f5;
+  color: #666;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-cancel-button:hover {
+  background: #e8e8e8;
+}
+
 .primary-action-button {
   flex: 1;
   padding: 14px 24px;

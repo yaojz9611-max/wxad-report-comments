@@ -12,9 +12,11 @@ type ProcessedTableData = {
 function App() {
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
   const [processedTableData, setProcessedTableData] = useState<ProcessedTableData | null>(null);
+  const [preferredMethod, setPreferredMethod] = useState<'online' | 'offline'>('online');
 
-  const handleDataProcessed = (data: ProcessedTableData | null) => {
+  const handleDataProcessed = (data: ProcessedTableData | null, method: 'online' | 'offline' = 'online') => {
     setProcessedTableData(data);
+    setPreferredMethod(method);
     if (data) {
       // 数据处理完成后，自动进入第二步
       setCurrentStep(2);
@@ -23,6 +25,12 @@ function App() {
 
   const handleBackToStep1 = () => {
     setCurrentStep(1);
+  };
+
+  const handleResetAll = () => {
+    setCurrentStep(1);
+    setProcessedTableData(null);
+    setPreferredMethod('online');
   };
 
   return (
@@ -49,11 +57,14 @@ function App() {
           <RawDataProcessor
             onDataChange={setProcessedTableData}
             onGoToNext={handleDataProcessed}
+            initialData={processedTableData}
           />
         ) : (
           <AnnotatedDataProcessor
             inputTableData={processedTableData}
             onGoToStep1={handleBackToStep1}
+            preferredMethod={preferredMethod}
+            onResetAll={handleResetAll}
           />
         )}
       </div>

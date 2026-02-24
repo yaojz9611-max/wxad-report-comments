@@ -9,7 +9,8 @@ type ProcessedTableData = {
 
 type Props = {
   onDataChange?: (data: ProcessedTableData | null) => void;
-  onGoToNext?: (data: ProcessedTableData) => void;
+  onGoToNext?: (data: ProcessedTableData, method: 'online' | 'offline') => void;
+  initialData?: ProcessedTableData | null;
 };
 
 const REQUIRED_COLUMNS = [
@@ -18,21 +19,17 @@ const REQUIRED_COLUMNS = [
   'raw_comments', 'tf'
 ];
 
-const RawDataProcessor = ({ onDataChange, onGoToNext }: Props) => {
+const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
-  const [tableData, setTableData] = useState<ProcessedTableData | null>(null);
+  const [tableData, setTableData] = useState<ProcessedTableData | null>(initialData || null);
   const [pageSize, setPageSize] = useState(50);
   const [page, setPage] = useState(1);
   const [tfHint, setTfHint] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
-  
-  const [xlsxFile, setXlsxFile] = useState<File | null>(null);
-  const [xlsxError, setXlsxError] = useState<string | null>(null);
-  const [xlsxProcessing, setXlsxProcessing] = useState(false);
 
   const tfColumnIndex = useMemo(() => {
     if (!tableData) return -1;
@@ -41,6 +38,13 @@ const RawDataProcessor = ({ onDataChange, onGoToNext }: Props) => {
 
   const totalRows = tableData?.rows.length || 0;
   const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+
+  // 当 initialData 变化时，恢复数据
+  useEffect(() => {
+    if (initialData) {
+      setTableData(initialData);
+    }
+  }, [initialData]);
 
   useEffect(() => {
     // 页面大小或数据变化时，保证 page 在合法范围内
@@ -231,9 +235,6 @@ const RawDataProcessor = ({ onDataChange, onGoToNext }: Props) => {
     setPage(1);
     setTfHint(null);
     setValidationError(null);
-    setXlsxFile(null);
-    setXlsxError(null);
-    setXlsxProcessing(false);
   };
 
   const updateTf = (globalRowIndex: number, nextValue: string) => {
@@ -322,7 +323,13 @@ const RawDataProcessor = ({ onDataChange, onGoToNext }: Props) => {
 
     setValidationError(null);
     if (tableData && onGoToNext) {
-      onGoToNext(tableData);
+      onGoToNext(tableData, 'online');
+    }
+  };
+
+  const handleSkipToOffline = () => {
+    if (tableData && onGoToNext) {
+      onGoToNext(tableData, 'offline');
     }
   };
 
@@ -341,90 +348,6 @@ const RawDataProcessor = ({ onDataChange, onGoToNext }: Props) => {
 
     const fileName = tableData.sourceFileName.replace(/\.[^.]+$/, '') + '-待标注.xlsx';
     XLSX.writeFile(workbook, fileName);
-  };
-
-  const handleXlsxFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
-    if (selectedFile && (selectedFile.name.endsWith('.xlsx') || selectedFile.name.endsWith('.xls'))) {
-      setXlsxFile(selectedFile);
-      setXlsxError(null);
-    } else {
-      setXlsxError('请上传 .xlsx 或 .xls 格式的文件');
-      setXlsxFile(null);
-    }
-  };
-
-  const resetXlsxUpload = () => {
-    setXlsxFile(null);
-    setXlsxError(null);
-    setXlsxProcessing(false);
-  };
-
-  const getActualColumnsFromWorksheet = (worksheet: XLSX.WorkSheet) => {
-    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-    const actualColumns: string[] = [];
-    for (let col = range.s.c; col <= range.e.c; col++) {
-      const cellAddress = XLSX.utils.encode_cell({ r: range.s.r, c: col });
-      const cell = worksheet[cellAddress];
-      if (cell && cell.v) {
-        actualColumns.push(String(cell.v).toLowerCase().trim());
-      } else {
-        actualColumns.push('');
-      }
-    }
-    return actualColumns;
-  };
-
-  const processXlsxFile = async () => {
-    if (!xlsxFile) return;
-
-    setXlsxProcessing(true);
-    setXlsxError(null);
-
-    try {
-      const arrayBuffer = await xlsxFile.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-
-      const firstSheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[firstSheetName];
-
-      // 获取实际列名
-      const actualColumns = getActualColumnsFromWorksheet(worksheet);
-      
-      // 校验列名
-      validateColumns(actualColumns);
-
-      // 读取数据
-      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-      const rows: string[][] = [];
-
-      for (let rowNum = range.s.r + 1; rowNum <= range.e.r; rowNum++) {
-        const row: string[] = [];
-        for (let colNum = range.s.c; colNum <= range.e.c; colNum++) {
-          const cellAddress = XLSX.utils.encode_cell({ r: rowNum, c: colNum });
-          const cell = worksheet[cellAddress];
-          row.push(cell && cell.v !== undefined ? String(cell.v).trim() : '');
-        }
-        if (row.some(cell => cell !== '')) {
-          rows.push(row);
-        }
-      }
-
-      const nextTableData: ProcessedTableData = {
-        sourceFileName: xlsxFile.name,
-        columns: actualColumns,
-        rows: rows
-      };
-
-      setTableData(nextTableData);
-      setPage(1);
-      // 不清空xlsxFile，保留显示
-
-    } catch (err) {
-      setXlsxError(`处理失败: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      setXlsxProcessing(false);
-    }
   };
 
   return (
@@ -644,108 +567,18 @@ const RawDataProcessor = ({ onDataChange, onGoToNext }: Props) => {
               重新开始
             </button>
           </div>
-        </div>
-      )}
 
-      {/* 独立的上传Excel模块 */}
-      <div className="upload-xlsx-section">
-        <div className="upload-xlsx-header-row">
-          <div className="upload-xlsx-header">
-            <h3 className="upload-xlsx-title">📊 上传离线处理后的 Excel 文件</h3>
-            <p className="upload-xlsx-description">
-              如果你已在本地完成标注，可以直接上传处理后的 Excel 文件
-            </p>
-          </div>
-          <div className="upload-xlsx-action">
-            <label htmlFor="xlsx-upload-input" className="upload-xlsx-link-button">
-              选择 Excel 文件 →
-            </label>
-            <input
-              id="xlsx-upload-input"
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleXlsxFileChange}
-              className="file-input"
-            />
-          </div>
-        </div>
-
-        {xlsxFile && (
-          <div className="xlsx-file-card">
-            <div className="xlsx-file-info">
-              <span className="xlsx-file-icon">📊</span>
-              <div className="xlsx-file-details">
-                <div className="xlsx-file-name">{xlsxFile.name}</div>
-                <div className="xlsx-file-size">{(xlsxFile.size / 1024).toFixed(2)} KB</div>
-              </div>
-            </div>
-            <div className="xlsx-file-actions">
-              <label htmlFor="xlsx-upload-input-change" className="xlsx-change-button">
-                重新选择
-              </label>
-            </div>
-          </div>
-        )}
-        <input
-          id="xlsx-upload-input-change"
-          type="file"
-          accept=".xlsx,.xls"
-          onChange={handleXlsxFileChange}
-          className="file-input"
-        />
-
-        {xlsxFile && !xlsxProcessing && !tableData && (
-          <button onClick={processXlsxFile} className="process-xlsx-button-large">
-            处理并加载数据
-          </button>
-        )}
-
-        {xlsxProcessing && (
-          <div className="processing">
-            <div className="spinner"></div>
-            <p>正在处理文件，请稍候...</p>
-          </div>
-        )}
-
-        {xlsxError && (
-          <div className="error-message">
-            <div className="error-title">❌ 处理出错</div>
-            <p>{xlsxError}</p>
-            <button onClick={resetXlsxUpload} className="reset-button">
-              重新上传
+          <div className="alternative-action">
+            <button
+              className="skip-to-offline-button"
+              onClick={handleSkipToOffline}
+              disabled={!tableData || !onGoToNext}
+            >
+              使用 Excel 离线处理，直接进入下一步 →
             </button>
           </div>
-        )}
-
-        {tableData && xlsxFile && (
-          <div className="xlsx-success-section">
-            <div className="data-ready-card">
-              <div className="data-ready-icon">✓</div>
-              <div className="data-ready-content">
-                <div className="data-ready-title">数据加载成功</div>
-                <div className="data-ready-text">
-                  共 <strong>{tableData.rows.length}</strong> 行数据，你可以在上方表格中继续编辑
-                </div>
-              </div>
-            </div>
-            <div className="action-buttons">
-              <button
-                className="primary-action-button"
-                onClick={handleGoToNext}
-                disabled={!tableData || !onGoToNext}
-              >
-                下一步：生成 CSV 文件 →
-              </button>
-              <button
-                onClick={reset}
-                className="secondary-action-button"
-              >
-                重新开始
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
