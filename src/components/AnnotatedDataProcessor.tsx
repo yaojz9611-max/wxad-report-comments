@@ -145,6 +145,8 @@ const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1, preferredMethod =
     } else {
       setError('请上传 .xlsx 或 .xls 格式的文件');
     }
+    // 重置input value，允许重复选择同一个文件
+    event.target.value = '';
   };
 
   const handleDragOver = (event: React.DragEvent) => {

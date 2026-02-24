@@ -53,8 +53,10 @@ const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
   }, [totalPages]);
 
   useEffect(() => {
-    onDataChange?.(tableData);
-  }, [tableData, onDataChange]);
+    if (onDataChange) {
+      onDataChange(tableData);
+    }
+  }, [tableData]); // 移除 onDataChange 依赖，避免无限循环
 
   const visibleRows = useMemo(() => {
     if (!tableData) return [] as string[][];
@@ -71,6 +73,8 @@ const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
     } else {
       setError('请上传 .txt 格式的文件');
     }
+    // 重置input value，允许重复选择同一个文件
+    event.target.value = '';
   };
 
   const handleDragOver = (event: React.DragEvent) => {
@@ -236,6 +240,7 @@ const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
     setPage(1);
     setTfHint(null);
     setValidationError(null);
+    setErrorRows(new Set()); // 重置错误行集合
   };
 
   const updateTf = (globalRowIndex: number, nextValue: string) => {
