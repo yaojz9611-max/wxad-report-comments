@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 
 type ProcessedTableData = {
@@ -40,10 +40,18 @@ const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
   const totalRows = tableData?.rows.length || 0;
   const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
 
+  // 使用 ref 来跟踪是否正在从 initialData 恢复数据
+  const isRestoringFromInitialData = useRef(false);
+
   // 当 initialData 变化时，恢复数据
   useEffect(() => {
     if (initialData) {
+      isRestoringFromInitialData.current = true;
       setTableData(initialData);
+      // 在下一个事件循环后重置标志
+      setTimeout(() => {
+        isRestoringFromInitialData.current = false;
+      }, 0);
     }
   }, [initialData]);
 
@@ -53,7 +61,8 @@ const RawDataProcessor = ({ onDataChange, onGoToNext, initialData }: Props) => {
   }, [totalPages]);
 
   useEffect(() => {
-    if (onDataChange) {
+    // 只有当不是从 initialData 恢复数据时，才通知父组件
+    if (!isRestoringFromInitialData.current && onDataChange) {
       onDataChange(tableData);
     }
   }, [tableData]); // 移除 onDataChange 依赖，避免无限循环
