@@ -327,20 +327,38 @@ const RawDataProcessor = ({ onDataChange, onGoToNext }: Props) => {
       </div>
 
       <div
-        className={`upload-section-compact ${dragOver ? 'drag-over' : ''}`}
+        className={`upload-section-compact ${dragOver ? 'drag-over' : ''} ${file ? 'has-file' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <div className="upload-compact-content">
-          <div className="upload-icon-small">📁</div>
-          <div className="upload-compact-text">
-            <label htmlFor="raw-file-input" className="file-input-label-compact">
-              选择 TXT 文件
-            </label>
-            <span className="upload-hint">或拖拽文件到此处</span>
+        {!file ? (
+          <div className="upload-compact-content">
+            <div className="upload-icon-small">📁</div>
+            <div className="upload-compact-text">
+              <label htmlFor="raw-file-input" className="file-input-label-compact">
+                选择 TXT 文件
+              </label>
+              <span className="upload-hint">或拖拽文件到此处</span>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="upload-file-ready">
+            <div className="file-ready-icon">✓</div>
+            <div className="file-ready-info">
+              <div className="file-ready-name">{file.name}</div>
+              <div className="file-ready-size">{(file.size / 1024).toFixed(2)} KB</div>
+            </div>
+            <div className="file-ready-actions">
+              <label htmlFor="raw-file-input-change" className="file-change-button">
+                修改文件
+              </label>
+              <button onClick={reset} className="file-delete-button">
+                删除文件
+              </button>
+            </div>
+          </div>
+        )}
         <input
           id="raw-file-input"
           type="file"
@@ -348,19 +366,14 @@ const RawDataProcessor = ({ onDataChange, onGoToNext }: Props) => {
           onChange={handleFileChange}
           className="file-input"
         />
+        <input
+          id="raw-file-input-change"
+          type="file"
+          accept=".txt"
+          onChange={handleFileChange}
+          className="file-input"
+        />
       </div>
-
-      {file && (
-        <div className="file-info">
-          <span>📄</span>
-          <span className="file-info-text">
-            已选择: {file.name} ({(file.size / 1024).toFixed(2)} KB)
-          </span>
-          <button onClick={reset} className="reset-button">
-            ✕
-          </button>
-        </div>
-      )}
 
       {file && !processing && !tableData && (
         <button onClick={processFile} className="process-button">
