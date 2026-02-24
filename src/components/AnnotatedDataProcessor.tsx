@@ -93,7 +93,6 @@ const normalizeTf = (v: unknown) => {
 };
 
 const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1 }: Props) => {
-  const [showUploadOption, setShowUploadOption] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState<ProcessResult | null>(null);
@@ -327,100 +326,106 @@ const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1 }: Props) => {
         </p>
       </div>
 
-      {inputSummary && (
-        <div className="data-ready-card">
-          <div className="data-ready-icon">✓</div>
-          <div className="data-ready-content">
-            <div className="data-ready-title">数据已准备就绪</div>
-            <div className="data-ready-text">
-              源文件：<strong>{inputSummary.source}</strong> · 共 <strong>{inputSummary.rowCount}</strong> 行数据
+      <div className="step2-processing-options">
+        {inputSummary && (
+          <div className="step2-option-card primary-option">
+            <div className="option-badge">方式一</div>
+            <div className="data-ready-card">
+              <div className="data-ready-icon">✓</div>
+              <div className="data-ready-content">
+                <div className="data-ready-title">使用第一步的数据</div>
+                <div className="data-ready-text">
+                  源文件：<strong>{inputSummary.source}</strong> · 共 <strong>{inputSummary.rowCount}</strong> 行数据
+                </div>
+              </div>
+              <button className="link-button" onClick={onGoToStep1} disabled={!onGoToStep1}>
+                ← 返回修改
+              </button>
+            </div>
+            {!processing && !result && (
+              <button onClick={processFile} className="primary-action-button" style={{ width: '100%', marginTop: '16px' }}>
+                生成 CSV 文件
+              </button>
+            )}
+          </div>
+        )}
+
+        <div className={`step2-option-card ${!inputSummary ? 'primary-option' : ''}`}>
+          <div className="option-badge">{inputSummary ? '方式二' : '上传文件'}</div>
+          <div className="upload-option-header">
+            <div className="upload-option-title">
+              <span className="upload-option-icon">📊</span>
+              上传手动标注的 Excel 文件
+            </div>
+            <p className="upload-option-description">
+              如果你已在离线完成标注，直接上传 Excel 文件即可生成 CSV
+            </p>
+          </div>
+          
+          <div
+            className={`upload-section-compact ${dragOver ? 'drag-over' : ''} ${file ? 'has-file' : ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            style={{ marginTop: '12px' }}
+          >
+            {!file ? (
+              <div className="upload-compact-content">
+                <div className="upload-icon-small">📊</div>
+                <div className="upload-compact-text">
+                  <label htmlFor="annotated-file-input" className="file-input-label-compact">
+                    选择 Excel 文件
+                  </label>
+                  <span className="upload-hint">或拖拽文件到此处</span>
+                </div>
+              </div>
+            ) : (
+              <div className="upload-file-ready">
+                <div className="file-ready-icon">✓</div>
+                <div className="file-ready-info">
+                  <div className="file-ready-name">{file.name}</div>
+                  <div className="file-ready-size">{(file.size / 1024).toFixed(2)} KB</div>
+                </div>
+                <div className="file-ready-actions">
+                  <label htmlFor="annotated-file-input-change" className="file-change-button">
+                    修改文件
+                  </label>
+                  <button onClick={reset} className="file-delete-button">
+                    删除文件
+                  </button>
+                </div>
+              </div>
+            )}
+            <input
+              id="annotated-file-input"
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFileChange}
+              className="file-input"
+            />
+            <input
+              id="annotated-file-input-change"
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFileChange}
+              className="file-input"
+            />
+          </div>
+
+          {file && !processing && !result && (
+            <button onClick={processFile} className="primary-action-button" style={{ width: '100%', marginTop: '16px' }}>
+              处理并生成 CSV
+            </button>
+          )}
+        </div>
+
+        {!inputSummary && !file && (
+          <div className="step2-hint-card">
+            <div className="hint-icon">💡</div>
+            <div className="hint-text">
+              提示：你可以先完成<button className="inline-link-button" onClick={onGoToStep1} disabled={!onGoToStep1}>第一步</button>的数据处理，或直接上传已标注的 Excel 文件
             </div>
           </div>
-          <button className="link-button" onClick={onGoToStep1} disabled={!onGoToStep1}>
-            ← 返回修改
-          </button>
-        </div>
-      )}
-
-      {!inputSummary && (
-        <div className="warning-card">
-          <div className="warning-icon">⚠️</div>
-          <div className="warning-content">
-            <div className="warning-title">未检测到第一步的数据</div>
-            <div className="warning-text">请先完成第一步的数据处理，或手动上传已标注的 Excel 文件</div>
-          </div>
-          <button className="link-button" onClick={onGoToStep1} disabled={!onGoToStep1}>
-            ← 返回第一步
-          </button>
-        </div>
-      )}
-
-      {!processing && !result && (
-        <button onClick={processFile} className="primary-action-button" style={{ width: '100%', marginTop: '20px' }}>
-          {inputSummary ? '生成 CSV 文件' : '开始处理并生成 CSV'}
-        </button>
-      )}
-
-      <div className="alternative-option">
-        <button 
-          className="toggle-option-button" 
-          onClick={() => setShowUploadOption(!showUploadOption)}
-        >
-          {showUploadOption ? '▼' : '▶'} 或者：手动上传已标注的 Excel 文件
-        </button>
-        
-        {showUploadOption && (
-          <>
-            <div
-              className={`upload-section-compact ${dragOver ? 'drag-over' : ''} ${file ? 'has-file' : ''}`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              style={{ marginTop: '12px' }}
-            >
-              {!file ? (
-                <div className="upload-compact-content">
-                  <div className="upload-icon-small">📊</div>
-                  <div className="upload-compact-text">
-                    <label htmlFor="annotated-file-input" className="file-input-label-compact">
-                      选择 Excel 文件
-                    </label>
-                    <span className="upload-hint">或拖拽文件到此处</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="upload-file-ready">
-                  <div className="file-ready-icon">✓</div>
-                  <div className="file-ready-info">
-                    <div className="file-ready-name">{file.name}</div>
-                    <div className="file-ready-size">{(file.size / 1024).toFixed(2)} KB</div>
-                  </div>
-                  <div className="file-ready-actions">
-                    <label htmlFor="annotated-file-input-change" className="file-change-button">
-                      修改文件
-                    </label>
-                    <button onClick={reset} className="file-delete-button">
-                      删除文件
-                    </button>
-                  </div>
-                </div>
-              )}
-              <input
-                id="annotated-file-input"
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleFileChange}
-                className="file-input"
-              />
-              <input
-                id="annotated-file-input-change"
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleFileChange}
-                className="file-input"
-              />
-            </div>
-          </>
         )}
       </div>
 
