@@ -259,7 +259,11 @@ const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1, preferredMethod =
     const { renamedData, groupCount } = transformAndAggregate(jsonData);
 
     const blob = generateCsvBlob(renamedData);
-    const outputFileName = `${toBaseName(f.name)}-输出.csv`;
+    
+    // 获取第二行第一列的内容作为文件名前缀
+    const prefix = renamedData.length > 0 ? String(Object.values(renamedData[0])[0] || '') : '';
+    const baseFileName = toBaseName(f.name);
+    const outputFileName = prefix ? `${prefix}-${baseFileName}-输出.csv` : `${baseFileName}-输出.csv`;
 
     setResult({ fileName: outputFileName, rowCount: renamedData.length, groupCount });
     setDownload(URL.createObjectURL(blob), outputFileName);
@@ -288,7 +292,11 @@ const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1, preferredMethod =
     const { renamedData, groupCount } = transformAndAggregate(jsonData);
 
     const blob = generateCsvBlob(renamedData);
-    const outputFileName = `${toBaseName(t.sourceFileName)}-输出.csv`;
+    
+    // 获取第二行第一列的内容作为文件名前缀
+    const prefix = renamedData.length > 0 ? String(Object.values(renamedData[0])[0] || '') : '';
+    const baseFileName = toBaseName(t.sourceFileName);
+    const outputFileName = prefix ? `${prefix}-${baseFileName}-输出.csv` : `${baseFileName}-输出.csv`;
 
     setResult({ fileName: outputFileName, rowCount: renamedData.length, groupCount });
     setDownload(URL.createObjectURL(blob), outputFileName);
