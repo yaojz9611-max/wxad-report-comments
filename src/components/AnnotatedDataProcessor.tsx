@@ -180,14 +180,15 @@ const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1, preferredMethod =
     setDownloadFileName(name);
   };
 
-  const generateCsvBlob = (rows: DataRow[]) => {
-    const ws = XLSX.utils.json_to_sheet(rows);
+  const generateCsvBlob = (rows: DataRow[], columnOrder: string[]) => {
+    // 严格按照指定的列顺序生成CSV，确保与pandas一致
+    const ws = XLSX.utils.json_to_sheet(rows, { header: columnOrder });
     const csv = XLSX.utils.sheet_to_csv(ws);
     const BOM = '\uFEFF';
     return new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
   };
 
-  const transformAndAggregate = (jsonData: DataRow[]) => {
+  const transformAndAggregate = (jsonData: DataRow[], originalColumns: string[]) => {
     if (jsonData.length === 0) {
       throw new Error('数据为空');
     }
@@ -202,45 +203,54 @@ const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1, preferredMethod =
       }
     }
 
+    // 使用数组保持分组顺序，模拟pandas的groupby行为
+    const groupKeys: string[] = [];
     const groups = new Map<string, DataRow[]>();
 
     for (const row of jsonData) {
       const key = `${row.sentiment_tag || ''}_${row.opinion || ''}`;
       if (!groups.has(key)) {
         groups.set(key, []);
+        groupKeys.push(key); // 记录分组出现的顺序
       }
       groups.get(key)!.push(row);
     }
 
     const newData: DataRow[] = [];
 
-    for (const group of groups.values()) {
+    // 按照分组出现的顺序处理，确保与pandas一致
+    for (const key of groupKeys) {
+      const group = groups.get(key)!;
       const tfSum = group.reduce((sum, row) => sum + (Number(row.tf) || 0), 0);
       if (tfSum === 0) continue;
 
+      // 严格按照Python代码：不过滤空值，直接join
       const rawComments = group
-        .map(row => row.raw_comments || '')
-        .filter(comment => String(comment).trim() !== '')
+        .map(row => String(row.raw_comments || ''))
         .join('$');
 
+      // 使用第一行数据，保持所有列
       const item = { ...group[0] };
       item.raw_comments = rawComments;
       newData.push(item);
     }
 
+    // 重命名 tf -> done_time，同时保持列的原始顺序
+    const outputColumns = originalColumns.map(col => col === 'tf' ? 'done_time' : col);
     const renamedData = newData.map(row => {
       const newRow: any = {};
-      for (const key in row) {
-        if (key === 'tf') {
-          newRow['done_time'] = row[key];
+      // 按照原始列顺序构建新对象
+      for (const col of originalColumns) {
+        if (col === 'tf') {
+          newRow['done_time'] = row[col];
         } else {
-          newRow[key] = row[key];
+          newRow[col] = row[col];
         }
       }
       return newRow;
     });
 
-    return { renamedData, groupCount: groups.size };
+    return { renamedData, groupCount: groups.size, outputColumns };
   };
 
   const processFromFile = async (f: File) => {
@@ -256,9 +266,9 @@ const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1, preferredMethod =
     const jsonData: DataRow[] = XLSX.utils.sheet_to_json(worksheet);
     if (jsonData.length === 0) throw new Error('Excel 文件为空');
 
-    const { renamedData, groupCount } = transformAndAggregate(jsonData);
+    const { renamedData, groupCount, outputColumns } = transformAndAggregate(jsonData, actualColumns);
 
-    const blob = generateCsvBlob(renamedData);
+    const blob = generateCsvBlob(renamedData, outputColumns);
     
     // 获取第二行第一列的内容作为文件名前缀
     const prefix = renamedData.length > 0 ? String(Object.values(renamedData[0])[0] || '') : '';
@@ -289,9 +299,9 @@ const AnnotatedDataProcessor = ({ inputTableData, onGoToStep1, preferredMethod =
       return obj;
     });
 
-    const { renamedData, groupCount } = transformAndAggregate(jsonData);
+    const { renamedData, groupCount, outputColumns } = transformAndAggregate(jsonData, columns);
 
-    const blob = generateCsvBlob(renamedData);
+    const blob = generateCsvBlob(renamedData, outputColumns);
     
     // 获取第二行第一列的内容作为文件名前缀
     const prefix = renamedData.length > 0 ? String(Object.values(renamedData[0])[0] || '') : '';
